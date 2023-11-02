@@ -4,8 +4,6 @@ package pokemon
 import (
 	"fmt"
 	"io"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
@@ -15,12 +13,6 @@ func restore() {
 
 func TestGetPokemon(t *testing.T) {
 	t.Run("Pokemon encontrado", func(t *testing.T) {
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprint(w, `{"name": "ditto"}`)
-		})
-
-		server := httptest.NewServer(handler)
-		defer server.Close()
 
 		pokemon, err := GetPokemon("ditto")
 		if err != nil {
@@ -33,12 +25,6 @@ func TestGetPokemon(t *testing.T) {
 	})
 
 	t.Run("Erro de status", func(t *testing.T) {
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNotFound)
-		})
-
-		server := httptest.NewServer(handler)
-		defer server.Close()
 
 		_, err := GetPokemon("unknown")
 		if err == nil {
@@ -55,13 +41,6 @@ func TestGetPokemon(t *testing.T) {
 			return []byte(`{"Name": "ditto"`), nil
 		}
 
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprint(w, `{"name": "ditto"`) // JSON inválido para simular erro de deserialização
-		})
-
-		server := httptest.NewServer(handler)
-		defer server.Close()
-
 		_, err := GetPokemon("ditto")
 		if err == nil {
 			t.Fatal("Deveria ter erro, mas não obteve")
@@ -76,13 +55,6 @@ func TestGetPokemon(t *testing.T) {
 		ReadAll = func(r io.Reader) ([]byte, error) {
 			return nil, fmt.Errorf("erro ao ler body")
 		}
-
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprint(w, `{"name": "ditto"`) // JSON inválido para simular erro de deserialização
-		})
-
-		server := httptest.NewServer(handler)
-		defer server.Close()
 
 		_, err := GetPokemon("ditto")
 		if err == nil {
