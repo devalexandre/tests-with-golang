@@ -1,4 +1,10 @@
 mode: set
-github.com/devalexandre/tests-with-golang/main.go:8.38,10.22 2 1
-github.com/devalexandre/tests-with-golang/main.go:10.22,12.6 1 1
-github.com/devalexandre/tests-with-golang/main.go:13.5,13.26 1 1
+github.com/devalexandre/tests-with-golang/main.go:17.48,20.16 3 1
+github.com/devalexandre/tests-with-golang/main.go:20.16,22.3 1 0
+github.com/devalexandre/tests-with-golang/main.go:23.2,25.28 2 1
+github.com/devalexandre/tests-with-golang/main.go:25.28,27.3 1 1
+github.com/devalexandre/tests-with-golang/main.go:29.2,30.16 2 1
+github.com/devalexandre/tests-with-golang/main.go:30.16,32.3 1 1
+github.com/devalexandre/tests-with-golang/main.go:34.2,36.16 3 1
+github.com/devalexandre/tests-with-golang/main.go:36.16,38.3 1 1
+github.com/devalexandre/tests-with-golang/main.go:40.2,40.22 1 1
