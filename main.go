@@ -14,28 +14,34 @@ type Pokemon struct {
 	Name string `json:"name"`
 }
 
-func GetPokemon(name string) (*Pokemon, error) {
+func ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("name")
 	url := fmt.Sprintf("https://pokeapi.co/api/v2/pokemon/%s", name)
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("erro ao buscar Pokémon: status %d", resp.StatusCode)
+		http.Error(w, fmt.Sprintf("erro ao buscar Pokémon: status %d", resp.StatusCode), resp.StatusCode)
+		return
 	}
 
 	body, err := ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	var pokemon Pokemon
 	err = json.Unmarshal(body, &pokemon)
 	if err != nil {
-		return nil, err
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	return &pokemon, nil
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(&pokemon)
 }

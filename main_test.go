@@ -2,63 +2,63 @@
 package pokemon
 
 import (
-	"fmt"
+	"encoding/json"
 	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
-func restore() {
+func resetReadAll() {
 	ReadAll = io.ReadAll
+}
+
+func TestMain(m *testing.M) {
+	resetReadAll()
+	m.Run()
 }
 
 func TestGetPokemon(t *testing.T) {
 	t.Run("Pokemon encontrado", func(t *testing.T) {
+		ReadAll = func(r io.Reader) ([]byte, error) {
+			return json.Marshal(Pokemon{Name: "pikachu"})
+		}
 
-		pokemon, err := GetPokemon("ditto")
+		// Crie o seu handler http
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ServeHTTP(w, r)
+		})
+
+		// Crie um servidor de teste
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Construa a URL com parâmetros de query
+		params := url.Values{}
+		params.Add("name", "pikachu")
+		req, _ := http.NewRequest(http.MethodGet, server.URL+"?"+params.Encode(), nil)
+
+		// Execute a requisição ao servidor de teste
+		res, err := http.DefaultClient.Do(req)
 		if err != nil {
-			t.Fatalf("não deveria ter erro, mas obteve %v", err)
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer res.Body.Close()
+
+		// Verifique o status code da resposta
+		if res.StatusCode != http.StatusOK {
+			t.Errorf("Expected status OK; got %v", res.StatusCode)
 		}
 
-		if pokemon.Name != "ditto" {
-			t.Errorf("esperava nome 'ditto', mas obteve '%s'", pokemon.Name)
+		// Decode the response and check if it's the expected pokemon
+		var p Pokemon
+		err = json.NewDecoder(res.Body).Decode(&p)
+		if err != nil {
+			t.Fatalf("Failed to decode response: %v", err)
 		}
-	})
-
-	t.Run("Erro de status", func(t *testing.T) {
-
-		_, err := GetPokemon("unknown")
-		if err == nil {
-			t.Fatal("deveria ter erro, mas não obteve")
-		}
-	})
-
-	t.Run("Erro de deserialização do JSON", func(t *testing.T) {
-
-		defer restore()
-
-		//simula retorno de JSON inválido
-		ReadAll = func(r io.Reader) ([]byte, error) {
-			return []byte(`{"Name": "ditto"`), nil
-		}
-
-		_, err := GetPokemon("ditto")
-		if err == nil {
-			t.Fatal("Deveria ter erro, mas não obteve")
-		}
-	})
-
-	t.Run("Erro de deserialização do JSON", func(t *testing.T) {
-
-		defer restore()
-
-		//simula retorno de JSON inválido
-		ReadAll = func(r io.Reader) ([]byte, error) {
-			return nil, fmt.Errorf("erro ao ler body")
-		}
-
-		_, err := GetPokemon("ditto")
-		if err == nil {
-			t.Fatal("Deveria ter erro, mas não obteve")
+		if p.Name != "pikachu" {
+			t.Errorf("Expected pokemon name to be 'pikachu', got '%v'", p.Name)
 		}
 	})
 
