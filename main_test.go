@@ -2,7 +2,9 @@
 package pokemon
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -26,7 +28,15 @@ func TestGetPokemon(t *testing.T) {
 			return json.Marshal(Pokemon{Name: "pikachu"})
 		}
 
-		HTTPGet = mockHTTPGet
+		mockResp := `{"name":"pikachu"}`
+		r := io.NopCloser(bytes.NewReader([]byte(mockResp))) // Cria um io.ReadCloser
+
+		HTTPGet = func(url string) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       r,
+			}, nil
+		}
 
 		// Crie o seu handler http
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +80,15 @@ func TestGetPokemon(t *testing.T) {
 			return nil, io.ErrUnexpectedEOF
 		}
 
-		HTTPGet = mockHTTPGet
+		mockResp := `{"name":"pikachu"}`
+		r := io.NopCloser(bytes.NewReader([]byte(mockResp))) // Cria um io.ReadCloser
+
+		HTTPGet = func(url string) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       r,
+			}, nil
+		}
 
 		// Crie o seu handler http
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +122,15 @@ func TestGetPokemon(t *testing.T) {
 			return []byte(`{"Name":123}`), nil
 		}
 
-		HTTPGet = mockHTTPGet
+		mockResp := `{"name":"pikachu"}`
+		r := io.NopCloser(bytes.NewReader([]byte(mockResp))) // Cria um io.ReadCloser
+
+		HTTPGet = func(url string) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       r,
+			}, nil
+		}
 
 		// Crie o seu handler http
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +160,55 @@ func TestGetPokemon(t *testing.T) {
 	})
 
 	t.Run("Error request", func(t *testing.T) {
-		HTTPGet = mockHTTPGetError
+
+		mockResp := `{"name":"pikachu"}`
+		r := io.NopCloser(bytes.NewReader([]byte(mockResp))) // Cria um io.ReadCloser
+
+		HTTPGet = func(url string) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       r,
+			}, nil
+		}
+
+		// Crie o seu handler http
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ServeHTTP(w, r)
+		})
+
+		// Crie um servidor de teste
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Construa a URL com parâmetros de query
+		params := url.Values{}
+		params.Add("name", "pikachu")
+		req, _ := http.NewRequest(http.MethodGet, server.URL+"?"+params.Encode(), nil)
+
+		// Execute a requisição ao servidor de teste
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer res.Body.Close()
+
+		// Verifique o status code da resposta
+		if res.StatusCode != http.StatusInternalServerError {
+			t.Errorf("Expected status Internal Server Error; got %v", res.StatusCode)
+		}
+	})
+
+	t.Run("Error request http status", func(t *testing.T) {
+
+		mockResp := `{"name":"pikachu"}`
+		r := io.NopCloser(bytes.NewReader([]byte(mockResp))) // Cria um io.ReadCloser
+
+		HTTPGet = func(url string) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusInternalServerError,
+				Body:       r,
+			}, nil
+		}
 
 		// Crie o seu handler http
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +238,16 @@ func TestGetPokemon(t *testing.T) {
 	})
 
 	t.Run("Error request http", func(t *testing.T) {
-		HTTPGet = mockHTTPGetErrorRequest
+
+		mockResp := `{"name":"pikachu"}`
+		r := io.NopCloser(bytes.NewReader([]byte(mockResp))) // Cria um io.ReadCloser
+
+		HTTPGet = func(url string) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       r,
+			}, fmt.Errorf("error request")
+		}
 
 		// Crie o seu handler http
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
