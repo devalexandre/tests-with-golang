@@ -8,7 +8,11 @@ import (
 	"net/http"
 )
 
-var ReadAll = io.ReadAll
+// Declaração de uma variável que pode ser sobreposta pelos testes.
+var (
+	ReadAll = io.ReadAll
+	HTTPGet = http.Get
+)
 
 type Pokemon struct {
 	Name string `json:"name"`
@@ -17,7 +21,7 @@ type Pokemon struct {
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Query().Get("name")
 	url := fmt.Sprintf("https://pokeapi.co/api/v2/pokemon/%s", name)
-	resp, err := http.Get(url)
+	resp, err := HTTPGet(url) // Aqui usamos a variável sobreposta.
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -12,6 +12,7 @@ import (
 
 func resetReadAll() {
 	ReadAll = io.ReadAll
+	HTTPGet = http.Get
 }
 
 func TestMain(m *testing.M) {
@@ -24,6 +25,8 @@ func TestGetPokemon(t *testing.T) {
 		ReadAll = func(r io.Reader) ([]byte, error) {
 			return json.Marshal(Pokemon{Name: "pikachu"})
 		}
+
+		HTTPGet = mockHTTPGet
 
 		// Crie o seu handler http
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -62,4 +65,131 @@ func TestGetPokemon(t *testing.T) {
 		}
 	})
 
+	t.Run("Error ReadAll", func(t *testing.T) {
+		ReadAll = func(r io.Reader) ([]byte, error) {
+			return nil, io.ErrUnexpectedEOF
+		}
+
+		HTTPGet = mockHTTPGet
+
+		// Crie o seu handler http
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ServeHTTP(w, r)
+		})
+
+		// Crie um servidor de teste
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Construa a URL com parâmetros de query
+		params := url.Values{}
+		params.Add("name", "pikachu")
+		req, _ := http.NewRequest(http.MethodGet, server.URL+"?"+params.Encode(), nil)
+
+		// Execute a requisição ao servidor de teste
+		res, err := http.DefaultClient.Do(req)
+		if res.StatusCode != http.StatusInternalServerError {
+			t.Errorf("Expected status Internal Server Error; got %v", res.StatusCode)
+		}
+
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer res.Body.Close()
+
+	})
+
+	t.Run("Error Unmarshal", func(t *testing.T) {
+		ReadAll = func(r io.Reader) ([]byte, error) {
+			return []byte(`{"Name":123}`), nil
+		}
+
+		HTTPGet = mockHTTPGet
+
+		// Crie o seu handler http
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ServeHTTP(w, r)
+		})
+
+		// Crie um servidor de teste
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Construa a URL com parâmetros de query
+		params := url.Values{}
+		params.Add("name", "pikachu")
+		req, _ := http.NewRequest(http.MethodGet, server.URL+"?"+params.Encode(), nil)
+
+		// Execute a requisição ao servidor de teste
+		res, err := http.DefaultClient.Do(req)
+		if res.StatusCode != http.StatusInternalServerError {
+			t.Errorf("Expected status Internal Server Error; got %v", res.StatusCode)
+		}
+
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer res.Body.Close()
+
+	})
+
+	t.Run("Error request", func(t *testing.T) {
+		HTTPGet = mockHTTPGetError
+
+		// Crie o seu handler http
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ServeHTTP(w, r)
+		})
+
+		// Crie um servidor de teste
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Construa a URL com parâmetros de query
+		params := url.Values{}
+		params.Add("name", "pikachu")
+		req, _ := http.NewRequest(http.MethodGet, server.URL+"?"+params.Encode(), nil)
+
+		// Execute a requisição ao servidor de teste
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer res.Body.Close()
+
+		// Verifique o status code da resposta
+		if res.StatusCode != http.StatusInternalServerError {
+			t.Errorf("Expected status Internal Server Error; got %v", res.StatusCode)
+		}
+	})
+
+	t.Run("Error request http", func(t *testing.T) {
+		HTTPGet = mockHTTPGetErrorRequest
+
+		// Crie o seu handler http
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ServeHTTP(w, r)
+		})
+
+		// Crie um servidor de teste
+		server := httptest.NewServer(handler)
+		defer server.Close()
+
+		// Construa a URL com parâmetros de query
+		params := url.Values{}
+		params.Add("name", "pikachu")
+		req, _ := http.NewRequest(http.MethodGet, server.URL+"?"+params.Encode(), nil)
+
+		// Execute a requisição ao servidor de teste
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer res.Body.Close()
+
+		// Verifique o status code da resposta
+		if res.StatusCode != http.StatusInternalServerError {
+			t.Errorf("Expected status Internal Server Error; got %v", res.StatusCode)
+		}
+	})
 }
